@@ -25,21 +25,15 @@ if (ville) {
 
 // Fonction qui envoie une requête à l'API d'autocomplétion de data.gouv et renvoie les suggestions renvoyées
 async function getAutocompleteSuggestions(query) {
-  // Construction de l'URL de l'API d'autocomplétion de data.gouv avec le terme de recherche
   const url = `https://api-adresse.data.gouv.fr/search/?q=${query}&type=municipality`;
-
-  // Envoi de la requête à l'API et récupération de la réponse au format JSON
   const response = await fetch(url);
   const data = await response.json();
-
-  // Récupération des suggestions de la réponse de l'API
   const suggestions = data.features.map((feature) => ({
     label: feature.properties.label,
     latitude: feature.geometry.coordinates[1],
     longitude: feature.geometry.coordinates[0],
+    postcode: feature.properties.postcode, // ajout du code postal
   }));
-
-  // Renvoi des suggestions
   return suggestions;
 }
 
@@ -51,25 +45,17 @@ function showSuggestions(suggestions) {
     suggestionElement.setAttribute('href', '#');
     suggestionElement.classList.add('result-ville');
 
-    suggestionElement.textContent = suggestion.label;
+    const suggestionLabel = suggestion.label + ', ' + suggestion.postcode; // modification de l'affichage
+    suggestionElement.textContent = suggestionLabel;
 
-    // Ajout d'un événement de clic sur chaque suggestion
     suggestionElement.addEventListener('click', (event) => {
-      event.preventDefault(); // Empêcher la page de se recharger
-
-      // Remplissage du champ de recherche avec la suggestion sélectionnée
+      event.preventDefault();
       searchInput.value = suggestion.label;
-
-      // Récupération des coordonnées de la suggestion sélectionnée
       const { latitude } = suggestion;
       const { longitude } = suggestion;
-
-      // Ajout de la variable Ville dans l'URL
       const urlParams = new URLSearchParams(window.location.search);
       urlParams.set('Ville', suggestion.label);
       window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
-
-      // Événement personnalisé qui envoie les coordonnées de la suggestion sélectionnée
       const suggestionSelectedEvent = new CustomEvent('suggestionSelected', {
         detail: {
           latitude: latitude,
@@ -77,8 +63,6 @@ function showSuggestions(suggestions) {
         },
       });
       document.dispatchEvent(suggestionSelectedEvent);
-
-      // Masquer les suggestions une fois qu'une suggestion est sélectionnée
       suggestionsList.innerHTML = '';
     });
 
