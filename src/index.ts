@@ -1,175 +1,183 @@
-const searchInput = document.querySelector('[data-ideeri="search"]');
-const suggestionsDiv = document.querySelector('[data-ideeri="suggestions"]');
-const mapDiv = document.querySelector('[data-ideeri="map"]');
-const mymap = L.map(mapDiv);
-const markerCoords = [];
-let lastMarker;
-let lastCircle;
-let ville;
+document.addEventListener('DOMContentLoaded', async () => {
+  const input = document.querySelector("[data-ideeri-map='search']");
+  const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
+  const mapDiv = document.querySelector("[data-ideeri-map='map']");
+  const filterButtons = document.querySelectorAll("[data-ideeri-map='Filter']");
+  const radiusInput = document.querySelector("[data-ideeri-map='rayon']");
 
-async function getSuggestions(query) {
-  const response = await fetch(
-    `https://api-adresse.data.gouv.fr/search/?q=${query}&type=municipality&autocomplete=1`
-  );
-  const data = await response.json();
-  return data.features.map((feature) => feature.properties.label);
-}
-async function showSuggestions(suggestions) {
-  suggestionsDiv.innerHTML = '';
-  const selectedVille = ville ? ville.toLowerCase() : null;
-
-  for (const suggestion of suggestions) {
-    const suggestionLink = document.createElement('a');
-    suggestionLink.textContent = suggestion;
-    suggestionLink.classList.add('result-ville');
-    suggestionLink.href = '#';
-
-    suggestionLink.addEventListener('click', async (event) => {
-      event.preventDefault();
-      const response = await fetch(
-        `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(
-          suggestion
-        )}&type=municipality&autocomplete=1`
-      );
-      const data = await response.json();
-      const lat = parseFloat(data.features[0].geometry.coordinates[1]);
-      const long = parseFloat(data.features[0].geometry.coordinates[0]);
-      const marker = L.marker([lat, long]).addTo(mymap);
-      marker.bindPopup(suggestion);
-      mymap.setView([lat, long], 13);
-      if (lastMarker) {
-        lastMarker.removeFrom(mymap);
-      }
-      if (lastCircle) {
-        lastCircle.removeFrom(mymap);
-      }
-      lastMarker = marker;
-      lastCircle = L.circle([lat, long], {
-        radius: 2000,
-        fillColor: '#f03',
-        color: '#f03',
-      }).addTo(mymap);
-      const radiusInput = document.querySelector('[data-ideeri="input"]');
-      radiusInput.value = lastCircle.getRadius();
-      radiusInput.addEventListener('input', () => {
-        const newRadius = parseFloat(radiusInput.value);
-        lastCircle.setRadius(newRadius);
-      });
-
-      // Add the parameter to the URL
-      const urlParams = new URLSearchParams(window.location.search);
-      urlParams.set('Ville', suggestion);
-      let newUrl = window.location.pathname;
-      if (urlParams.toString() !== '') {
-        newUrl += '?' + urlParams.toString();
-      }
-      window.history.pushState({}, '', newUrl);
-    });
-
-    if (selectedVille === suggestion.toLowerCase()) {
-      suggestionLink.click();
-    }
-
-    const suggestionDiv = document.createElement('div');
-    suggestionDiv.appendChild(suggestionLink);
-    suggestionsDiv.appendChild(suggestionDiv);
-  }
-}
-
-async function loadMap() {
+  const map = L.map(mapDiv).setView([46.603354, 1.888334], 5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-  }).addTo(mymap);
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
 
-  const gpsElements = document.querySelectorAll('[data-ideeri="gps"]');
-  gpsElements.forEach(function (gpsElement) {
-    const coords = gpsElement.textContent.split(',');
-    const lat = parseFloat(coords[0].trim());
-    const long = parseFloat(coords[1].trim());
-    markerCoords.push([lat, long]);
-    const marker = L.marker([lat, long]).addTo(mymap);
-    const popupElement = gpsElement.closest('[data-ideeri="pop-up"]');
-    if (popupElement) {
-      marker.bindPopup(popupElement.innerHTML);
-    }
-  });
+  let gpsCoordinates = null;
+  let markers = [];
+  let dataGouvMarker = null;
+  let dataGouvCircle = null;
 
-  mymap.fitBounds(markerCoords);
-
-  await getVilleFromURL();
-  await showSuggestions();
-}
-
-async function getVilleFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
-  ville = urlParams.get('Ville');
-  if (ville) {
+  async function fetchCoordinates(city) {
     const response = await fetch(
-      `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(
-        ville
-      )}&type=municipality&autocomplete=1`
+      `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(city)}&limit=1`
     );
     const data = await response.json();
-    const lat = parseFloat(data.features[0].geometry.coordinates[1]);
-    const long = parseFloat(data.features[0].geometry.coordinates[0]);
-    const marker = L.marker([lat, long]).addTo(mymap);
-    marker.bindPopup(ville);
-    mymap.setView([lat, long], 13);
-    if (lastMarker) {
-      lastMarker.removeFrom(mymap);
-    }
-    if (lastCircle) {
-      lastCircle.removeFrom(mymap);
-    }
-    lastMarker = marker;
-    lastCircle = L.circle([lat, long], {
-      radius: 2000,
-      fillColor: '#f03',
-      color: '#f03',
-    }).addTo(mymap);
+    return data.features[0].geometry.coordinates;
   }
-}
 
-function updateMapData() {
-  const mapDataDiv = document.getElementById('map-data');
-  const newGpsElements = mapDataDiv.querySelectorAll('[data-ideeri="gps"]');
+  function getCityParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('Ville');
+  }
 
-  // Remove old markers
-  markerCoords.length = 0;
-  mymap.eachLayer((layer) => {
-    if (layer instanceof L.Marker && layer !== lastMarker) {
-      mymap.removeLayer(layer);
+  function clearMarkers() {
+    markers.forEach((marker) => {
+      map.removeLayer(marker);
+    });
+    markers = [];
+  }
+
+  function updateURL(city) {
+    if (history.pushState) {
+      const newurl =
+        window.location.protocol +
+        '//' +
+        window.location.host +
+        window.location.pathname +
+        '?Ville=' +
+        encodeURIComponent(city);
+      window.history.pushState({ path: newurl }, '', newurl);
+    }
+  }
+
+  function addMarker(lat, lon, isDataGouvMarker = false, city = null, popupElement = null) {
+    const newMarker = L.marker([lat, lon]);
+    if (!isDataGouvMarker && popupElement) {
+      newMarker.bindPopup(popupElement.innerHTML);
+    }
+    newMarker.addTo(map);
+
+    if (isDataGouvMarker) {
+      if (dataGouvMarker) {
+        map.removeLayer(dataGouvMarker);
+      }
+      dataGouvMarker = newMarker;
+      if (dataGouvCircle) {
+        map.removeLayer(dataGouvCircle);
+      }
+      const radius = parseFloat(radiusInput.value) * 1000; // Convert km to m
+      dataGouvCircle = L.circle([lat, lon], { radius: radius, color: 'red' }).addTo(map);
+      if (city) {
+        updateURL(city);
+      }
+    } else {
+      markers.push(newMarker);
+    }
+    console.log('Marqueur ajouté :', { latitude: lat, longitude: lon });
+
+    updateMapView();
+    hideOutsidePopups();
+  }
+
+  function updateMapView() {
+    const group = new L.featureGroup(markers.concat(dataGouvMarker ? [dataGouvMarker] : []));
+    map.fitBounds(group.getBounds());
+  }
+
+  function addGpsMarkers() {
+    const gpsElements = document.querySelectorAll("[data-ideeri-map='gps']");
+    gpsElements.forEach((element) => {
+      const coords = element.textContent.split(',').map(Number);
+      if (coords.length === 2) {
+        const popupElement = element.closest("[data-ideeri-map='pop-up']");
+        addMarker(coords[0], coords[1], false, null, popupElement);
+      }
+    });
+  }
+
+  function hideOutsidePopups() {
+    const popups = document.querySelectorAll("[data-ideeri-map='pop-up']");
+    popups.forEach((popup) => {
+      const gpsElement = popup.querySelector("[data-ideeri-map='gps']");
+      const coords = gpsElement.textContent.split(',').map(Number);
+      if (dataGouvCircle && !dataGouvCircle.getBounds().contains(coords)) {
+        popup.style.display = 'none';
+      } else {
+        popup.style.display = '';
+      }
+    });
+  }
+
+  input.addEventListener('input', async (event) => {
+    const searchTerm = event.target.value;
+
+    if (searchTerm.length >= 3) {
+      try {
+        const response = await fetch(
+          `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(searchTerm)}&limit=5`
+        );
+        const data = await response.json();
+
+        suggestions.innerHTML = '';
+        data.features.forEach((feature) => {
+          const a = document.createElement('a');
+          a.textContent = feature.properties.label;
+          a.href = '#';
+          a.classList.add('Result-ville');
+          a.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            const { coordinates } = feature.geometry;
+
+            input.value = feature.properties.label;
+
+            gpsCoordinates = {
+              latitude: coordinates[1],
+              longitude: coordinates[0],
+            };
+
+            console.log('Coordonnées GPS :', gpsCoordinates);
+
+            suggestions.innerHTML = '';
+          });
+          suggestions.appendChild(a);
+        });
+      } catch (error) {
+        console.error("Erreur lors de la récupération des données d'autocomplétion :", error);
+      }
+    } else {
+      suggestions.innerHTML = '';
     }
   });
 
-  // Add new markers
-  newGpsElements.forEach(function (gpsElement) {
-    const coords = gpsElement.textContent.split(',');
-    const lat = parseFloat(coords[0].trim());
-    const long = parseFloat(coords[1].trim());
-    markerCoords.push([lat, long]);
-    const marker = L.marker([lat, long]).addTo(mymap);
-    const popupElement = gpsElement.closest('[data-ideeri="pop-up"]');
-    if (popupElement) {
-      marker.bindPopup(popupElement.innerHTML);
-    }
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (gpsCoordinates) {
+        addMarker(gpsCoordinates.latitude, gpsCoordinates.longitude, true, input.value);
+      } else {
+        console.log('Aucune adresse sélectionnée');
+      }
+
+      // Clear previous markers and add new ones
+      clearMarkers();
+
+      // Delay adding new markers by 1 second
+      setTimeout(addGpsMarkers, 500);
+
+      // Hide popups outside the circle
+      hideOutsidePopups();
+    });
   });
 
-  mymap.fitBounds(markerCoords);
-}
+  // Initial marker load
+  addGpsMarkers();
 
-document.addEventListener('DOMContentLoaded', loadMap);
+  // Fetch coordinates for city from URL and add a marker
+  const city = getCityParam();
+  if (city) {
+    const coordinates = await fetchCoordinates(city);
+    addMarker(coordinates[1], coordinates[0], true, city);
 
-searchInput.addEventListener('input', async (event) => {
-  const query = event.target.value.trim();
-  if (query !== '') {
-    const suggestions = await getSuggestions(query);
-    showSuggestions(suggestions);
-    ville = null;
-  } else {
-    suggestionsDiv.innerHTML = '';
+    // Hide popups outside the circle
+    hideOutsidePopups();
   }
 });
-
-// Add a listener to update the map data when needed
-document.getElementById('update-map-data-button').addEventListener('click', updateMapData);
