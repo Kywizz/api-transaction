@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 1.0.0
+
+### Major Changes
+
+- 0a1643a: API Change
+
 ## 0.0.3
 
 ### Patch Changes
