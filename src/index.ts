@@ -114,9 +114,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const visiblePopups = document.querySelectorAll(
       "[data-ideeri-map='pop-up']:not([style*='display: none'])"
     );
-    const [city, postalCode, department] = feature.properties.context.split(', ');
+    const { municipality } = feature.properties;
+    const postalCode = feature.properties.postcode;
 
-    const headingContent = `${visiblePopups.length} Bien immobilier à vendre à ${city} ${postalCode} ${department}`;
+    const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
+    const headingContent = `${visiblePopups.length} ${bien} à vendre à ${municipality} ${postalCode}`;
     headingElement.textContent = headingContent;
   }
 
