@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 1.0.2
+
+### Patch Changes
+
+- 94c53cc: Update heading content
+
 ## 1.0.1
 
 ### Patch Changes
