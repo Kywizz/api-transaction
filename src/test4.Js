@@ -49,14 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function addMarker(
-    lat,
-    lon,
-    isDataGouvMarker = false,
-    city = null,
-    popupElement = null,
-    initialRadius = 2000
-  ) {
+  function addMarker(lat, lon, isDataGouvMarker = false, city = null, popupElement = null) {
     const newMarker = L.marker([lat, lon]);
     if (!isDataGouvMarker && popupElement) {
       newMarker.bindPopup(popupElement.innerHTML);
@@ -71,10 +64,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (dataGouvCircle) {
         map.removeLayer(dataGouvCircle);
       }
-      dataGouvCircle = L.circle([lat, lon], { radius: initialRadius, color: 'red' }).addTo(map);
+      const radius = parseFloat(radiusInput.value) * 1000; // Convert km to m
+      dataGouvCircle = L.circle([lat, lon], { radius: radius, color: 'red' }).addTo(map);
+      if (city) {
+        updateURL(city);
+      }
     } else {
       markers.push(newMarker);
     }
+    console.log('Marqueur ajouté :', { latitude: lat, longitude: lon });
 
     updateMapView();
     hideOutsidePopups();
@@ -109,17 +107,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function updateHeading(feature) {
-    const headingElement = document.querySelector("[data-ideeri-map='heading']");
-    const visiblePopups = document.querySelectorAll(
-      "[data-ideeri-map='pop-up']:not([style*='display: none'])"
-    );
-    const [city, postalCode, department] = feature.properties.context.split(', ');
-
-    const headingContent = `${visiblePopups.length} Bien immobilier à vendre à ${city} ${postalCode} ${department}`;
-    headingElement.textContent = headingContent;
-  }
-
   input.addEventListener('input', async (event) => {
     const searchTerm = event.target.value;
 
@@ -148,13 +135,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               longitude: coordinates[0],
             };
 
-            // add marker with default radius of 2km
-            addMarker(gpsCoordinates.latitude, gpsCoordinates.longitude, true, input.value);
+            console.log('Coordonnées GPS :', gpsCoordinates);
 
             suggestions.innerHTML = '';
-
-            // Update heading with city, postal code, and department info
-            updateHeading(feature);
           });
           suggestions.appendChild(a);
         });
@@ -168,33 +151,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   filterButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      if (gpsCoordinates && dataGouvMarker) {
-        if (dataGouvCircle) {
-          map.removeLayer(dataGouvCircle);
-        }
-        const radius = parseFloat(radiusInput.value) * 1000; // Convert km to m
-        dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
-          radius: radius,
-          color: 'red',
-        }).addTo(map);
+      if (gpsCoordinates) {
+        addMarker(gpsCoordinates.latitude, gpsCoordinates.longitude, true, input.value);
       } else {
         console.log('Aucune adresse sélectionnée');
       }
 
       // Clear previous markers and add new ones
       clearMarkers();
-      setTimeout(addGpsMarkers, 500);
-      hideOutsidePopups();
 
-      // Update heading
-      if (dataGouvMarker) {
-        const visiblePopups = document.querySelectorAll(
-          "[data-ideeri-map='pop-up']:not([style*='display: none'])"
-        );
-        const headingElement = document.querySelector("[data-ideeri-map='heading']");
-        const headingContent = `${visiblePopups.length} annonces à vendre à ${input.value}`;
-        headingElement.textContent = headingContent;
-      }
+      // Delay adding new markers by 1 second
+      setTimeout(addGpsMarkers, 500);
+
+      // Hide popups outside the circle
+      hideOutsidePopups();
     });
   });
 
@@ -206,6 +176,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (city) {
     const coordinates = await fetchCoordinates(city);
     addMarker(coordinates[1], coordinates[0], true, city);
+
+    // Hide popups outside the circle
     hideOutsidePopups();
   }
 });
+
+window.onunload;
