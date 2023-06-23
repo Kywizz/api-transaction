@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.0.1
+
+### Patch Changes
+
+- 08dbd32: Uppate Map
+
 ## 2.0.0
 
 ### Major Changes
