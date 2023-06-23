@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.0.0
+
+### Major Changes
+
+- 3fb82e3: Update Map
+
 ## 1.0.3
 
 ### Patch Changes
