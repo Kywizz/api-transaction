@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const filterButtons = document.querySelectorAll("[data-ideeri-map='Filter']");
   const radiusInput = document.querySelector("[data-ideeri-map='rayon']");
 
-  const map = L.map(mapDiv).setView([46.603354, 1.888334], 5);
+  const map = L.map(mapDiv, { maxZoom: 14.5 }).setView([46.603354, 1.888334], 5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -57,9 +57,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     popupElement = null,
     initialRadius = 2000
   ) {
-    const newMarker = L.marker([lat, lon]);
+    const myIcon = L.icon({
+      iconUrl: 'http://localhost:3000/Rond.png', // Remplacez ceci par l'URL de votre image
+      iconSize: [15, 15], // Changez ces valeurs en fonction de la taille de votre image
+      iconAnchor: [7.5, 7.5],
+      popupAnchor: [-3, -76],
+    });
+
+    const markerOptions = isDataGouvMarker ? {} : { icon: myIcon };
+    const newMarker = L.marker([lat, lon], markerOptions);
     if (!isDataGouvMarker && popupElement) {
-      newMarker.bindPopup(popupElement.innerHTML);
+      const popTitleElement = popupElement.querySelector("[data-ideeri-map='pop-titre']");
+      const popDescriptionElement = popupElement.querySelector("[data-ideeri-map='pop-up-loc']");
+      const popPhotoElement = popupElement.querySelector("[data-ideeri-map='pop-up-photo']");
+      const popTypeElement = popupElement.querySelector("[data-ideeri-map='pop-up-type']");
+      const newPopupContent = document.createElement('div');
+
+      if (popPhotoElement) {
+        newPopupContent.append(popPhotoElement.cloneNode(true));
+      }
+
+      if (popDescriptionElement) {
+        newPopupContent.append(popDescriptionElement.cloneNode(true));
+      }
+
+      if (popTypeElement) {
+        newPopupContent.append(popTypeElement.cloneNode(true));
+      }
+
+      if (popTitleElement) {
+        newPopupContent.append(popTitleElement.cloneNode(true));
+      }
+
+      newMarker.bindPopup(newPopupContent);
     }
     newMarker.addTo(map);
 
@@ -168,8 +198,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ...
+
   filterButtons.forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
+      // <-- add async here
       if (gpsCoordinates && dataGouvMarker) {
         if (dataGouvCircle) {
           map.removeLayer(dataGouvCircle);
@@ -190,15 +223,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Update heading
       if (dataGouvMarker) {
+        // Wait for some time to allow popups to update
+        await new Promise((resolve) => setTimeout(resolve, 500)); // <-- you can use await here now
+
         const visiblePopups = document.querySelectorAll(
           "[data-ideeri-map='pop-up']:not([style*='display: none'])"
         );
         const headingElement = document.querySelector("[data-ideeri-map='heading']");
-        const headingContent = `${visiblePopups.length} annonces à vendre à ${input.value}`;
+        const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
+        const headingContent = `${visiblePopups.length} ${bien} à vendre à ${input.value}`;
         headingElement.textContent = headingContent;
       }
     });
   });
+
+  // ...
 
   // Initial marker load
   addGpsMarkers();
