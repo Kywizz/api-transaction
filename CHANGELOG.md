@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.0.2
+
+### Patch Changes
+
+- 3b468f0: Update Leaflet Pop
+
 ## 2.0.1
 
 ### Patch Changes
