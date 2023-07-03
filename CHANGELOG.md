@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.1.0
+
+### Minor Changes
+
+- b19c6d2: Update leaflet map
+
 ## 2.0.5
 
 ### Patch Changes
