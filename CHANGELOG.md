@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.0.4
+
+### Patch Changes
+
+- 3eb3543: Leaflet Update
+
 ## 2.0.3
 
 ### Patch Changes
