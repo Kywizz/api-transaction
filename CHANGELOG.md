@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.0.5
+
+### Patch Changes
+
+- d6af7b5: Src Icon
+
 ## 2.0.4
 
 ### Patch Changes
