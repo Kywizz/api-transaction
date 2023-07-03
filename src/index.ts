@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initialRadius = 2000
   ) {
     const myIcon = L.icon({
-      iconUrl: 'http://localhost:3000/Rond.png', // Remplacez ceci par l'URL de votre image
+      iconUrl:
+        'https://uploads-ssl.webflow.com/645b5544855ad21ebaa042ed/64a27771d886f6640a7bdc62_Rond.png', // Remplacez ceci par l'URL de votre image
       iconSize: [15, 15], // Changez ces valeurs en fonction de la taille de votre image
       iconAnchor: [7.5, 7.5],
       popupAnchor: [-3, -76],
