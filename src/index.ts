@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log("Script chargé et prêt à être exécuté !");
+
   const input = document.querySelector("[data-ideeri-map='search']");
   const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
   const mapDiv = document.querySelector("[data-ideeri-map='map']");
@@ -59,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   ) {
     const myIcon = L.icon({
       iconUrl:
-        'https://uploads-ssl.webflow.com/645b5544855ad21ebaa042ed/64a27771d886f6640a7bdc62_Rond.png', // Remplacez ceci par l'URL de votre image
+        'https://uploads-ssl.webflow.com/652e41ea42a2918351b533e4/653a84b6bd5b88c8ea1946e8_64a27771d886f6640a7bdc62_Rond.png', // Remplacez ceci par l'URL de votre image
       iconSize: [15, 15], // Changez ces valeurs en fonction de la taille de votre image
       iconAnchor: [7.5, 7.5],
       popupAnchor: [-3, -76],
