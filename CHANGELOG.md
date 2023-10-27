@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.1.1
+
+### Patch Changes
+
+- ad4d6f5: url picto
+
 ## 2.1.0
 
 ### Minor Changes
