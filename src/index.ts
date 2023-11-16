@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const a = document.createElement('a');
           a.textContent = feature.properties.label;
           a.href = '#';
-          a.classList.add('Result-ville');
+          a.classList.add('result-ville');
           a.addEventListener('click', (event) => {
             event.preventDefault();
 
