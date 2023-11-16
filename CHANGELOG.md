@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.2.0
+
+### Minor Changes
+
+- 9a1ea07: Class CSS
+
 ## 2.1.2
 
 ### Patch Changes
