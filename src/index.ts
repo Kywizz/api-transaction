@@ -254,5 +254,5 @@ document.addEventListener('DOMContentLoaded', async () => {
       addMarker(coordinates[1], coordinates[0], true, city);
       hideOutsidePopups();
     }
-  }, 500);
+  }, 800);
 });
