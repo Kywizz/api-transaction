@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.2.2
+
+### Patch Changes
+
+- 7e60982: Test prod
+
 ## 2.2.1
 
 ### Patch Changes
