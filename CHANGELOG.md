@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.2.1
+
+### Patch Changes
+
+- f7882e0: Timeout 500
+
 ## 2.2.0
 
 ### Minor Changes
