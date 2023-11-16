@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.1.2
+
+### Patch Changes
+
+- 7e7b3b3: Console log
+
 ## 2.1.1
 
 ### Patch Changes
