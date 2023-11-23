@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
+
     let gpsCoordinates = null;
     let markers = [];
     let dataGouvMarker = null;
@@ -192,6 +193,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
               // Update heading with city, postal code, and department info
               updateHeading(feature);
+
+              // Update the URL with the new city
+              const newCity = input.value;
+              const urlParams = new URLSearchParams(window.location.search);
+              urlParams.set('Ville', newCity);
+              const newURL = `${window.location.pathname}?${urlParams.toString()}`;
+              window.history.pushState({}, '', newURL);
             });
             suggestions.appendChild(a);
           });
@@ -202,6 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         suggestions.innerHTML = '';
       }
     });
+
 
     // ...
 
