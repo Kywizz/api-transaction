@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.3.1
+
+### Patch Changes
+
+- 68a426b: Ajout du suivis de rayon au changement de ville
+
 ## 2.3.0
 
 ### Minor Changes
