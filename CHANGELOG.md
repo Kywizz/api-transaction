@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.3.0
+
+### Minor Changes
+
+- b7953e1: Add Param
+
 ## 2.2.2
 
 ### Patch Changes
