@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let markers = [];
     let dataGouvMarker = null;
     let dataGouvCircle = null;
+    let currentRadius = 2000;
+
 
     async function fetchCoordinates(city) {
       const response = await fetch(
@@ -107,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (dataGouvCircle) {
           map.removeLayer(dataGouvCircle);
         }
-        dataGouvCircle = L.circle([lat, lon], { radius: initialRadius, color: 'red' }).addTo(map);
+        dataGouvCircle = L.circle([lat, lon], { radius: currentRadius, color: 'red' }).addTo(map);
       } else {
         markers.push(newMarker);
       }
@@ -209,6 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         suggestions.innerHTML = '';
       }
+
     });
 
 
@@ -222,6 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             map.removeLayer(dataGouvCircle);
           }
           const radius = parseFloat(radiusInput.value) * 1000; // Convert km to m
+          currentRadius = radius;
           dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
             radius: radius,
             color: 'red',
@@ -257,11 +261,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     addGpsMarkers();
 
     // Fetch coordinates for city from URL and add a marker
+    // Fetch coordinates for city from URL and add a marker
     const city = getCityParam();
     if (city) {
       const coordinates = await fetchCoordinates(city);
+      gpsCoordinates = {
+        latitude: coordinates[1],
+        longitude: coordinates[0],
+      };
       addMarker(coordinates[1], coordinates[0], true, city);
       hideOutsidePopups();
+      input.value = city;
     }
+
   }, 800);
 });
