@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajout d'un délai avant d'éxécuter le script
   setTimeout(async () => {
-    console.log("Map ideeri 2.2.3");
+    console.log("Map ideeri 2.2.4");
 
     const input = document.querySelector("[data-ideeri-map='search']");
     const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         newMarker.bindPopup(newPopupContent);
       }
+
       newMarker.addTo(map);
 
       if (isDataGouvMarker) {
@@ -106,11 +107,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           map.removeLayer(dataGouvMarker);
         }
         dataGouvMarker = newMarker;
+
         if (dataGouvCircle) {
           map.removeLayer(dataGouvCircle);
         }
-        dataGouvCircle = L.circle([lat, lon], { radius: currentRadius, color: 'red' }).addTo(map);
+
+        dataGouvCircle = L.circle([lat, lon], { radius: initialRadius, color: 'red' }).addTo(map);
+
+        // Ajuster le zoom pour inclure le cercle entier
+        map.fitBounds(dataGouvCircle.getBounds(), { padding: [50, 50] }); // Ajout d'un padding pour assurer la visibilité totale du cercle
       } else {
+        // Si aucun cercle n'est présent, appliquer le zoom standard
+        if (!dataGouvCircle || !dataGouvCircle.getRadius()) {
+          map.setView([lat, lon], 15); // Niveau de zoom fixe
+        }
         markers.push(newMarker);
       }
 
@@ -119,9 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateMapView() {
-      const group = new L.featureGroup(markers.concat(dataGouvMarker ? [dataGouvMarker] : []));
-      map.fitBounds(group.getBounds());
+      // Ne pas ajuster la vue si un marqueur de ville spécifique (DataGouvMarker) est présent
+      if (!dataGouvMarker) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds());
+      }
     }
+
 
     function addGpsMarkers() {
       const gpsElements = document.querySelectorAll("[data-ideeri-map='gps']");
@@ -135,17 +149,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function hideOutsidePopups() {
+      // Vérifier si le cercle est défini et a un rayon non nul
+      if (!dataGouvCircle || !dataGouvCircle.getRadius()) {
+        // Si le cercle n'est pas défini ou n'a pas de rayon, tous les pop-ups restent visibles
+        document.querySelectorAll("[data-ideeri-map='pop-up']").forEach((popup) => {
+          popup.style.display = '';
+        });
+        return; // Quitter la fonction tôt
+      }
+
+      // La logique existante pour masquer ou afficher les pop-ups en fonction de leur position par rapport au cercle
       const popups = document.querySelectorAll("[data-ideeri-map='pop-up']");
+      const circleCenter = dataGouvCircle.getLatLng();
       popups.forEach((popup) => {
         const gpsElement = popup.querySelector("[data-ideeri-map='gps']");
         const coords = gpsElement.textContent.split(',').map(Number);
-        if (dataGouvCircle && !dataGouvCircle.getBounds().contains(coords)) {
+        const point = L.latLng(coords[0], coords[1]);
+        if (circleCenter.distanceTo(point) > dataGouvCircle.getRadius()) {
           popup.style.display = 'none';
         } else {
           popup.style.display = '';
         }
       });
     }
+
 
     function updateHeading(feature) {
       const headingElement = document.querySelector("[data-ideeri-map='heading']");
@@ -219,30 +246,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     filterButtons.forEach((button) => {
       button.addEventListener('click', async () => {
-        // <-- add async here
         if (gpsCoordinates && dataGouvMarker) {
           if (dataGouvCircle) {
             map.removeLayer(dataGouvCircle);
           }
-          const radius = parseFloat(radiusInput.value) * 1000; // Convert km to m
+
+          // Récupération et mise à jour du rayon à partir de l'input
+          const radius = parseFloat(radiusInput.value) * 1000; // Convertir de km en mètres
           currentRadius = radius;
+
+          // Création du nouveau cercle avec le rayon mis à jour
           dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
             radius: radius,
             color: 'red',
           }).addTo(map);
+
+          // Ajuster la vue de la carte pour inclure le cercle entier
+          map.fitBounds(dataGouvCircle.getBounds(), { padding: [50, 50] }); // Ajout d'un padding
         } else {
           console.log('Aucune adresse sélectionnée');
         }
 
-        // Clear previous markers and add new ones
+        // Effacer les marqueurs précédents et en ajouter de nouveaux
         clearMarkers();
         setTimeout(addGpsMarkers, 500);
         hideOutsidePopups();
 
-        // Update heading
+        // Mettre à jour le titre si nécessaire
         if (dataGouvMarker) {
-          // Wait for some time to allow popups to update
-          await new Promise((resolve) => setTimeout(resolve, 500)); // <-- you can use await here now
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Attendre pour la mise à jour des popups
 
           const visiblePopups = document.querySelectorAll(
             "[data-ideeri-map='pop-up']:not([style*='display: none'])"
@@ -254,6 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     });
+
 
     // ...
 
