@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajout d'un délai avant d'éxécuter le script
   setTimeout(async () => {
-    console.log("Map ideeri 2.2.4");
+    console.log("Map ideeri 2.2.5");
 
     const input = document.querySelector("[data-ideeri-map='search']");
     const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
     const mapDiv = document.querySelector("[data-ideeri-map='map']");
     const filterButtons = document.querySelectorAll("[data-ideeri-map='Filter']");
     const radiusInput = document.querySelector("[data-ideeri-map='rayon']");
+
 
     const map = L.map(mapDiv, { maxZoom: 14.5 }).setView([46.603354, 1.888334], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -21,6 +22,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let dataGouvMarker = null;
     let dataGouvCircle = null;
     let currentRadius = 2000;
+
+
+    // Pour les éléments input
+    const updateInputs = document.querySelectorAll('[data-ideeri-map="CallProperty"]');
+    updateInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        // Introduire un délai avant de mettre à jour le compteur
+        setTimeout(() => {
+          updatePropertyCount();
+        }, 500); // 500 millisecondes, ajustez selon le besoin
+      });
+    });
 
 
     async function fetchCoordinates(city) {
@@ -126,6 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       updateMapView();
       hideOutsidePopups();
+      updatePropertyCount();
     }
 
     function updateMapView() {
@@ -171,21 +185,32 @@ document.addEventListener('DOMContentLoaded', async () => {
           popup.style.display = '';
         }
       });
+      updatePropertyCount();
     }
 
 
-    function updateHeading(feature) {
-      const headingElement = document.querySelector("[data-ideeri-map='heading']");
-      const visiblePopups = document.querySelectorAll(
-        "[data-ideeri-map='pop-up']:not([style*='display: none'])"
-      );
-      const { municipality } = feature.properties;
-      const postalCode = feature.properties.postcode;
+
+
+    function updatePropertyCount() {
+      const propertyCountElement = document.querySelector("#propertyCount");
+      const visiblePopups = document.querySelectorAll("[data-ideeri-map='pop-up']:not([style*='display: none'])");
 
       const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
-      const headingContent = `${visiblePopups.length} ${bien} à vendre à ${municipality} ${postalCode}`;
-      headingElement.textContent = headingContent;
+      propertyCountElement.textContent = `${visiblePopups.length} ${bien} à vendre`;
     }
+
+    function updateMunicipalityInfo(feature) {
+      const municipalityInfoElement = document.querySelector("#municipalityInfo");
+      const municipality = feature.properties.municipality;
+      const postalCode = feature.properties.postcode;
+
+      municipalityInfoElement.textContent = ` à ${municipality} ${postalCode}`;
+    }
+
+
+
+
+
 
     input.addEventListener('input', async (event) => {
       const searchTerm = event.target.value;
@@ -221,7 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               suggestions.innerHTML = '';
 
               // Update heading with city, postal code, and department info
-              updateHeading(feature);
+              updateMunicipalityInfo(feature);
+              updatePropertyCount();
 
               // Update the URL with the new city
               const newCity = input.value;
@@ -242,50 +268,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
 
-    // ...
-
-    filterButtons.forEach((button) => {
-      button.addEventListener('click', async () => {
-        if (gpsCoordinates && dataGouvMarker) {
-          if (dataGouvCircle) {
-            map.removeLayer(dataGouvCircle);
-          }
-
-          // Récupération et mise à jour du rayon à partir de l'input
-          const radius = parseFloat(radiusInput.value) * 1000; // Convertir de km en mètres
-          currentRadius = radius;
-
-          // Création du nouveau cercle avec le rayon mis à jour
-          dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
-            radius: radius,
-            color: 'red',
-          }).addTo(map);
-
-          // Ajuster la vue de la carte pour inclure le cercle entier
-          map.fitBounds(dataGouvCircle.getBounds(), { padding: [50, 50] }); // Ajout d'un padding
-        } else {
-          console.log('Aucune adresse sélectionnée');
+    // Fonction pour mettre à jour le rayon du cercle
+    function updateCircleRadius(newRadius) {
+      if (gpsCoordinates && dataGouvMarker) {
+        if (dataGouvCircle) {
+          map.removeLayer(dataGouvCircle);
         }
-
-        // Effacer les marqueurs précédents et en ajouter de nouveaux
-        clearMarkers();
-        setTimeout(addGpsMarkers, 500);
+        const radius = parseFloat(newRadius) * 1000;
+        currentRadius = radius;
+        dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
+          radius: radius,
+          color: 'red',
+        }).addTo(map);
+        map.fitBounds(dataGouvCircle.getBounds(), { padding: [50, 50] });
         hideOutsidePopups();
 
-        // Mettre à jour le titre si nécessaire
-        if (dataGouvMarker) {
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Attendre pour la mise à jour des popups
+      }
+      updatePropertyCount();
+    }
 
-          const visiblePopups = document.querySelectorAll(
-            "[data-ideeri-map='pop-up']:not([style*='display: none'])"
-          );
-          const headingElement = document.querySelector("[data-ideeri-map='heading']");
-          const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
-          const headingContent = `${visiblePopups.length} ${bien} à vendre à ${input.value}`;
-          headingElement.textContent = headingContent;
-        }
-      });
+    // Gestionnaire d'événements pour le changement de rayon
+    radiusInput.addEventListener('input', (event) => {
+      updateCircleRadius(event.target.value);
     });
+
 
 
     // ...
