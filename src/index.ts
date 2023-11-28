@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajout d'un délai avant d'éxécuter le script
   setTimeout(async () => {
-    console.log("Map ideeri 2.2.5");
+    console.log("Map ideeri 2.4.2");
 
     const input = document.querySelector("[data-ideeri-map='search']");
     const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
