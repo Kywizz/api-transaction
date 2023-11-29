@@ -1,5 +1,15 @@
 # @ideeri/api-transaction
 
+## 2.4.0
+
+### Minor Changes
+
+- 9995283: Update Rayon + Heading
+
+### Patch Changes
+
+- 205c7bf: Update Map Rayon + Heading
+
 ## 2.3.2
 
 ### Patch Changes
