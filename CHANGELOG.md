@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.4.1
+
+### Patch Changes
+
+- 69d9165: Add heading type Bien
+
 ## 2.4.0
 
 ### Minor Changes
