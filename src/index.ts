@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajout d'un délai avant d'éxécuter le script
   setTimeout(async () => {
-    console.log("Map ideeri 2.4.4");
+    console.log("Map ideeri 2.5.4");
 
     const input = document.querySelector("[data-ideeri-map='search']");
     const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
@@ -194,10 +194,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updatePropertyCount() {
       const propertyCountElement = document.querySelector("#propertyCount");
       const visiblePopups = document.querySelectorAll("[data-ideeri-map='pop-up']:not([style*='display: none'])");
+      const checkedCheckboxes = document.querySelectorAll("[data-ideeri-map='CallProperty']:checked");
 
-      const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
-      propertyCountElement.textContent = `${visiblePopups.length} ${bien} à vendre`;
+      let label;
+
+      // Si une seule checkbox est cochée, utilisez son label, sinon utilisez 'Bien immobilier'
+      if (checkedCheckboxes.length === 1) {
+        label = checkedCheckboxes[0].getAttribute('ideeri-label');
+      } else {
+        label = 'Bien immobilier';
+      }
+
+      const bien = visiblePopups.length > 1 ? 's' : '';
+      propertyCountElement.textContent = `${visiblePopups.length} ${label}${bien} à vendre`;
     }
+
+
+
 
     function updateMunicipalityInfo(feature) {
       const municipalityInfoElement = document.querySelector("#municipalityInfo");
