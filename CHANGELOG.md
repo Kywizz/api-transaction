@@ -1,5 +1,11 @@
 # @ideeri/api-transaction
 
+## 2.4.2
+
+### Patch Changes
+
+- ad4ca06: Add delay time
+
 ## 2.4.1
 
 ### Patch Changes
