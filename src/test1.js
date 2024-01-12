@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajout d'un délai avant d'éxécuter le script
   setTimeout(async () => {
-    console.log("Map ideeri 2.2.3");
+    console.log("Map ideeri 2.5.6 / Liam");
 
     const input = document.querySelector("[data-ideeri-map='search']");
     const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
     const mapDiv = document.querySelector("[data-ideeri-map='map']");
     const filterButtons = document.querySelectorAll("[data-ideeri-map='Filter']");
     const radiusInput = document.querySelector("[data-ideeri-map='rayon']");
+
 
     const map = L.map(mapDiv, { maxZoom: 14.5 }).setView([46.603354, 1.888334], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -20,6 +21,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let markers = [];
     let dataGouvMarker = null;
     let dataGouvCircle = null;
+    let currentRadius = 2000;
+
+
+    // Pour les éléments input
+    const updateInputs = document.querySelectorAll('[data-ideeri-map="CallProperty"]');
+    updateInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        // Introduire un délai avant de mettre à jour le compteur
+        setTimeout(() => {
+          updatePropertyCount();
+        }, 500); // 500 millisecondes, ajustez selon le besoin
+      });
+    });
 
 
     async function fetchCoordinates(city) {
@@ -98,6 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         newMarker.bindPopup(newPopupContent);
       }
+
       newMarker.addTo(map);
 
       if (isDataGouvMarker) {
@@ -105,22 +120,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           map.removeLayer(dataGouvMarker);
         }
         dataGouvMarker = newMarker;
+
         if (dataGouvCircle) {
           map.removeLayer(dataGouvCircle);
         }
+
         dataGouvCircle = L.circle([lat, lon], { radius: initialRadius, color: 'red' }).addTo(map);
+
+        // Ajuster le zoom pour inclure le cercle entier
+        map.fitBounds(dataGouvCircle.getBounds(), { padding: [50, 50] }); // Ajout d'un padding pour assurer la visibilité totale du cercle
       } else {
+        // Si aucun cercle n'est présent, appliquer le zoom standard
+        if (!dataGouvCircle || !dataGouvCircle.getRadius()) {
+          map.setView([lat, lon], 15); // Niveau de zoom fixe
+        }
         markers.push(newMarker);
       }
 
       updateMapView();
       hideOutsidePopups();
+      updatePropertyCount();
     }
 
     function updateMapView() {
-      const group = new L.featureGroup(markers.concat(dataGouvMarker ? [dataGouvMarker] : []));
-      map.fitBounds(group.getBounds());
+      // Ne pas ajuster la vue si un marqueur de ville spécifique (DataGouvMarker) est présent
+      if (!dataGouvMarker) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds());
+      }
     }
+
 
     function addGpsMarkers() {
       const gpsElements = document.querySelectorAll("[data-ideeri-map='gps']");
@@ -134,30 +163,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function hideOutsidePopups() {
+      // Vérifier si le cercle est défini et a un rayon non nul
+      if (!dataGouvCircle || !dataGouvCircle.getRadius()) {
+        // Si le cercle n'est pas défini ou n'a pas de rayon, tous les pop-ups restent visibles
+        document.querySelectorAll("[data-ideeri-map='pop-up']").forEach((popup) => {
+          popup.style.display = '';
+        });
+        return; // Quitter la fonction tôt
+      }
+
+      // La logique existante pour masquer ou afficher les pop-ups en fonction de leur position par rapport au cercle
       const popups = document.querySelectorAll("[data-ideeri-map='pop-up']");
+      const circleCenter = dataGouvCircle.getLatLng();
       popups.forEach((popup) => {
         const gpsElement = popup.querySelector("[data-ideeri-map='gps']");
         const coords = gpsElement.textContent.split(',').map(Number);
-        if (dataGouvCircle && !dataGouvCircle.getBounds().contains(coords)) {
+        const point = L.latLng(coords[0], coords[1]);
+        if (circleCenter.distanceTo(point) > dataGouvCircle.getRadius()) {
           popup.style.display = 'none';
         } else {
           popup.style.display = '';
         }
       });
+      updatePropertyCount();
     }
 
-    function updateHeading(feature) {
-      const headingElement = document.querySelector("[data-ideeri-map='heading']");
-      const visiblePopups = document.querySelectorAll(
-        "[data-ideeri-map='pop-up']:not([style*='display: none'])"
-      );
-      const { municipality } = feature.properties;
+
+
+
+    function updatePropertyCount() {
+      const propertyCountElement = document.querySelector("#propertyCount");
+      const visiblePopups = document.querySelectorAll("[data-ideeri-map='pop-up']:not([style*='display: none'])");
+      const checkedCheckboxes = document.querySelectorAll("[data-ideeri-map='CallProperty']:checked");
+
+      let label;
+
+      // Si une seule checkbox est cochée, utilisez son label, sinon utilisez 'Bien immobilier'
+      if (checkedCheckboxes.length === 1) {
+        label = checkedCheckboxes[0].getAttribute('ideeri-label');
+      } else {
+        label = 'Bien immobilier';
+      }
+
+      const bien = visiblePopups.length > 1 ? 's' : '';
+      propertyCountElement.textContent = `${visiblePopups.length} ${label}${bien} à vendre`;
+    }
+
+
+
+
+    function updateMunicipalityInfo(feature) {
+      const municipalityInfoElement = document.querySelector("#municipalityInfo");
+      const municipality = feature.properties.municipality;
       const postalCode = feature.properties.postcode;
 
-      const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
-      const headingContent = `${visiblePopups.length} ${bien} à vendre à ${municipality} ${postalCode}`;
-      headingElement.textContent = headingContent;
+      municipalityInfoElement.textContent = ` à ${municipality} ${postalCode}`;
     }
+
+
+
+
+
 
     input.addEventListener('input', async (event) => {
       const searchTerm = event.target.value;
@@ -193,7 +259,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               suggestions.innerHTML = '';
 
               // Update heading with city, postal code, and department info
-              updateHeading(feature);
+              updateMunicipalityInfo(feature);
+              updatePropertyCount();
 
               // Update the URL with the new city
               const newCity = input.value;
@@ -214,44 +281,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
 
-    // ...
-
-    filterButtons.forEach((button) => {
-      button.addEventListener('click', async () => {
-        // <-- add async here
-        if (gpsCoordinates && dataGouvMarker) {
-          if (dataGouvCircle) {
-            map.removeLayer(dataGouvCircle);
-          }
-          const radius = parseFloat(radiusInput.value) * 1000; // Convert km to m
-          dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
-            radius: radius,
-            color: 'red',
-          }).addTo(map);
-        } else {
-          console.log('Aucune adresse sélectionnée');
+    // Fonction pour mettre à jour le rayon du cercle
+    function updateCircleRadius(newRadius) {
+      if (gpsCoordinates && dataGouvMarker) {
+        if (dataGouvCircle) {
+          map.removeLayer(dataGouvCircle);
         }
-
-        // Clear previous markers and add new ones
-        clearMarkers();
-        setTimeout(addGpsMarkers, 500);
+        const radius = parseFloat(newRadius) * 1000;
+        currentRadius = radius;
+        dataGouvCircle = L.circle([gpsCoordinates.latitude, gpsCoordinates.longitude], {
+          radius: radius,
+          color: 'red',
+        }).addTo(map);
+        map.fitBounds(dataGouvCircle.getBounds(), { padding: [50, 50] });
         hideOutsidePopups();
 
-        // Update heading
-        if (dataGouvMarker) {
-          // Wait for some time to allow popups to update
-          await new Promise((resolve) => setTimeout(resolve, 500)); // <-- you can use await here now
+      }
+      updatePropertyCount();
+    }
 
-          const visiblePopups = document.querySelectorAll(
-            "[data-ideeri-map='pop-up']:not([style*='display: none'])"
-          );
-          const headingElement = document.querySelector("[data-ideeri-map='heading']");
-          const bien = visiblePopups.length > 1 ? 'Biens immobiliers' : 'Bien immobilier';
-          const headingContent = `${visiblePopups.length} ${bien} à vendre à ${input.value}`;
-          headingElement.textContent = headingContent;
-        }
-      });
+    // Gestionnaire d'événements pour le changement de rayon
+    radiusInput.addEventListener('input', (event) => {
+      updateCircleRadius(event.target.value);
     });
+
+
 
     // ...
 

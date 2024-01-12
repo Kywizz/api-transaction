@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajout d'un délai avant d'éxécuter le script
   setTimeout(async () => {
-    console.log("Map ideeri 2.5.6");
+    console.log("Map ideeri 2.5.6 / Liam");
 
     const input = document.querySelector("[data-ideeri-map='search']");
     const suggestions = document.querySelector("[data-ideeri-map='suggestions']");
@@ -326,5 +326,5 @@ document.addEventListener('DOMContentLoaded', async () => {
       input.value = city;
     }
 
-  }, 800);
+  }, 1000);
 });
